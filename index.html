@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#14182b" />
   <title>מנייני ביתר – עכשיו, הבא, ומפה</title>
 
   <!-- CSS -->
@@ -35,13 +36,11 @@
           <option value="mincha">מנחה</option>
           <option value="maariv">מעריב</option>
         </select>
+        <!-- יום חול / שבת בלבד -->
         <select id="daytype" aria-label="בחירת יום">
-         <option value="weekday">חול</option>
-         <option value="erev_shabbat">ערב שבת</option>
-         <option value="shabbat">שבת</option>
-         <option value="motzei_shabbat">מוצ״ש</option>
+          <option value="weekday">יום חול</option>
+          <option value="shabbat">שבת</option>
         </select>
-
       </div>
 
       <div class="row wrap">
@@ -93,35 +92,50 @@
   <dialog id="shulDialog">
     <div class="dialog-inner">
       <button id="dlgClose" class="dlg-close" aria-label="סגור">✕</button>
+
       <h2 id="dlgName"></h2>
       <div id="dlgMeta" class="meta"></div>
+
+      <!-- קטגוריה: יום חול -->
+      <h3 style="margin-top:10px">יום חול</h3>
       <div class="times-block">
-        <h3>שחרית</h3>
+        <h4>שחרית</h4>
         <div id="dlgShacharit" class="times"></div>
       </div>
       <div class="times-block">
-        <h3>מנחה</h3>
+        <h4>מנחה</h4>
         <div id="dlgMincha" class="times"></div>
       </div>
       <div class="times-block">
-        <h3>מעריב</h3>
+        <h4>מעריב</h4>
         <div id="dlgMaariv" class="times"></div>
       </div>
-      <div id="dlgLinks" class="meta"></div>
-    </div>
-    <div class="times-block">
-  <h3>ערב שבת • מנחה</h3>
-  <div id="dlgErevMincha" class="times"></div>
-</div>
-<div class="times-block">
-  <h3>קבלת שבת</h3>
-  <div id="dlgKabbalat" class="times"></div>
-</div>
-<div class="times-block">
-  <h3>מוצ״ש • מעריב</h3>
-  <div id="dlgMotzaeiMaariv" class="times"></div>
-</div>
 
+      <!-- קטגוריה: שבת -->
+      <h3 style="margin-top:14px">שבת</h3>
+      <div class="times-block">
+        <h4>מנחה ערב שבת</h4>
+        <div id="dlgErevMincha" class="times"></div>
+      </div>
+      <div class="times-block">
+        <h4>קבלת שבת / ערבית</h4>
+        <div id="dlgKabbalat" class="times"></div>
+      </div>
+      <div class="times-block">
+        <h4>שחרית שבת</h4>
+        <div id="dlgShabbatShacharit" class="times"></div>
+      </div>
+      <div class="times-block">
+        <h4>מנחה שבת</h4>
+        <div id="dlgShabbatMincha" class="times"></div>
+      </div>
+      <div class="times-block">
+        <h4>מוצ״ש • מעריב</h4>
+        <div id="dlgMotzaeiMaariv" class="times"></div>
+      </div>
+
+      <div id="dlgLinks" class="meta" style="margin-top:10px"></div>
+    </div>
   </dialog>
 
   <script src="app.js"></script>
