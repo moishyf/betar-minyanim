@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>מנייני ביתר – עכשיו והבא</title>
+
+  <!-- עיצוב ראשי -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Leaflet (מפה) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- dayjs לזמנים -->
+  <script src="https://unpkg.com/dayjs/dayjs.min.js"></script>
+  <script src="https://unpkg.com/dayjs/plugin/customParseFormat.js"></script>
+</head>
+<body>
+  <header>
+    <h1>מנייני ביתר</h1>
+
+    <div class="filters">
+      <input id="q" placeholder="חיפוש: שם בית כנסת / רחוב" aria-label="חיפוש" />
+
+      <select id="nusach" aria-label="נוסח">
+        <option value="">כל הנוסחים</option>
+        <option>אשכנז</option>
+        <option>ספרד</option>
+        <option>עדות המזרח</option>
+      </select>
+
+      <div class="locrow">
+        <input id="manualAddress" placeholder="כתובת למשל: קדושת לוי 17, ביתר" aria-label="כתובת ידנית" />
+        <button id="setAddress" title="הגדר מיקום לפי כתובת">הגדר מיקום</button>
+        <button id="nearMe" title="אתר אותי לפי GPS">איכון</button>
+      </div>
+
+      <div class="timerow">
+        <label for="when">שעה:</label>
+        <input id="when" type="time" />
+        <button id="clearTime" title="חזרה לעכשיו">עכשיו</button>
+      </div>
+    </div>
+
+    <nav class="tabs">
+      <button data-tab="now" class="active">עכשיו</button>
+      <button data-tab="next">הבא</button>
+      <button data-tab="map">מפה</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="now" class="tab active">
+      <ul id="nowList" class="cards"></ul>
+    </section>
+
+    <section id="next" class="tab">
+      <ul id="nextList" class="cards"></ul>
+    </section>
+
+    <section id="map" class="tab">
+      <div id="mapEl" role="application" aria-label="מפת בתי הכנסת"></div>
+    </section>
+  </main>
+
+  <footer>
+    <small>
+      💡 טיפ: אפשר להקליד כתובת משלך או להשתמש באיכון. חסר מניין? נוסיף!<br>
+      נתוני מיפוי: © OpenStreetMap contributors.
+    </small>
+  </footer>
+
+  <!-- קוד האפליקציה -->
+  <script src="app.js"></script>
+</body>
+</html>
