@@ -155,3 +155,21 @@ dialog h2{ margin:0 0 8px }
 /* לוודא שהמפה לא "מטפסת" מעל טאבים אחרים */
 #map { position: relative; z-index: 0; }
 .leaflet-container { z-index: 0 !important; }
+/* --- שיפורי קריאות בדיאלוג --- */
+dialog h2, 
+dialog h3, 
+#shulDialog .times, 
+#shulDialog .chip {
+  color: #f0f4ff !important; /* טקסט בהיר */
+}
+
+#shulDialog .chip {
+  background: rgba(124,156,255,.15);
+  border: 1px solid rgba(124,156,255,.35);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+#shulDialog .meta {
+  color: #cdd5f5 !important;
+}
