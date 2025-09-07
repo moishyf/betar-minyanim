@@ -35,6 +35,13 @@
           <option value="mincha">מנחה</option>
           <option value="maariv">מעריב</option>
         </select>
+        <select id="daytype" aria-label="בחירת יום">
+         <option value="weekday">חול</option>
+         <option value="erev_shabbat">ערב שבת</option>
+         <option value="shabbat">שבת</option>
+         <option value="motzei_shabbat">מוצ״ש</option>
+        </select>
+
       </div>
 
       <div class="row wrap">
@@ -102,6 +109,19 @@
       </div>
       <div id="dlgLinks" class="meta"></div>
     </div>
+    <div class="times-block">
+  <h3>ערב שבת • מנחה</h3>
+  <div id="dlgErevMincha" class="times"></div>
+</div>
+<div class="times-block">
+  <h3>קבלת שבת</h3>
+  <div id="dlgKabbalat" class="times"></div>
+</div>
+<div class="times-block">
+  <h3>מוצ״ש • מעריב</h3>
+  <div id="dlgMotzaeiMaariv" class="times"></div>
+</div>
+
   </dialog>
 
   <script src="app.js"></script>
