@@ -148,3 +148,10 @@ dialog h2{ margin:0 0 8px }
   .row{ flex-direction:column; align-items:stretch }
   .tabs{ flex-wrap:wrap }
 }
+/* --- FORCE tabs behavior --- */
+.tab { display: none !important; }
+.tab.active { display: block !important; }
+
+/* לוודא שהמפה לא "מטפסת" מעל טאבים אחרים */
+#map { position: relative; z-index: 0; }
+.leaflet-container { z-index: 0 !important; }
