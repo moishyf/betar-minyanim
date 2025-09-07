@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>מנייני ביתר – עכשיו והבא</title>
+  <title>מנייני ביתר – עכשיו, הבא, ומפה</title>
 
-  <!-- עיצוב ראשי -->
+  <!-- CSS -->
   <link rel="stylesheet" href="styles.css" />
 
   <!-- Leaflet (מפה) -->
@@ -21,22 +21,27 @@
     <h1>מנייני ביתר</h1>
 
     <div class="filters">
-      <input id="q" placeholder="חיפוש: שם בית כנסת / רחוב" aria-label="חיפוש" />
-
-      <select id="nusach" aria-label="נוסח">
-        <option value="">כל הנוסחים</option>
-        <option>אשכנז</option>
-        <option>ספרד</option>
-        <option>עדות המזרח</option>
-      </select>
-
-      <div class="locrow">
-        <input id="manualAddress" placeholder="כתובת למשל: קדושת לוי 17, ביתר" aria-label="כתובת ידנית" />
-        <button id="setAddress" title="הגדר מיקום לפי כתובת">הגדר מיקום</button>
-        <button id="nearMe" title="אתר אותי לפי GPS">איכון</button>
+      <div class="row wrap">
+        <input id="q" placeholder="חיפוש: שם בית כנסת / רחוב" aria-label="חיפוש" />
+        <select id="nusach" aria-label="נוסח">
+          <option value="">כל הנוסחים</option>
+          <option>אשכנז</option>
+          <option>ספרד</option>
+          <option>עדות המזרח</option>
+        </select>
+        <select id="prayer" aria-label="בחירת תפילה">
+          <option value="">כל התפילות</option>
+          <option value="shacharit">שחרית</option>
+          <option value="mincha">מנחה</option>
+          <option value="maariv">מעריב</option>
+        </select>
       </div>
 
-      <div class="timerow">
+      <div class="row wrap">
+        <input id="manualAddress" placeholder="כתובת: למשל קדושת לוי 17, ביתר" aria-label="כתובת ידנית" />
+        <button id="setAddress" title="הגדר מיקום לפי כתובת">הגדר מיקום</button>
+        <button id="nearMe" title="אתר אותי לפי GPS">איכון</button>
+
         <label for="when">שעה:</label>
         <input id="when" type="time" />
         <button id="clearTime" title="חזרה לעכשיו">עכשיו</button>
@@ -46,6 +51,7 @@
     <nav class="tabs">
       <button data-tab="now" class="active">עכשיו</button>
       <button data-tab="next">הבא</button>
+      <button data-tab="shuls">בתי כנסת</button>
       <button data-tab="map">מפה</button>
     </nav>
   </header>
@@ -59,6 +65,11 @@
       <ul id="nextList" class="cards"></ul>
     </section>
 
+    <!-- רשימת בתי כנסת לבחירה -->
+    <section id="shuls" class="tab">
+      <ul id="shulList" class="cards"></ul>
+    </section>
+
     <section id="map" class="tab">
       <div id="mapEl" role="application" aria-label="מפת בתי הכנסת"></div>
     </section>
@@ -66,12 +77,33 @@
 
   <footer>
     <small>
-      💡 טיפ: אפשר להקליד כתובת משלך או להשתמש באיכון. חסר מניין? נוסיף!<br>
+      ניתן לבחור תפילה (שחרית/מנחה/מעריב), לחפש בית כנסת, או לבחור מהמפה.<br>
       נתוני מיפוי: © OpenStreetMap contributors.
     </small>
   </footer>
 
-  <!-- קוד האפליקציה -->
+  <!-- דיאלוג כרטיסיית בית כנסת -->
+  <dialog id="shulDialog">
+    <div class="dialog-inner">
+      <button id="dlgClose" class="dlg-close" aria-label="סגור">✕</button>
+      <h2 id="dlgName"></h2>
+      <div id="dlgMeta" class="meta"></div>
+      <div class="times-block">
+        <h3>שחרית</h3>
+        <div id="dlgShacharit" class="times"></div>
+      </div>
+      <div class="times-block">
+        <h3>מנחה</h3>
+        <div id="dlgMincha" class="times"></div>
+      </div>
+      <div class="times-block">
+        <h3>מעריב</h3>
+        <div id="dlgMaariv" class="times"></div>
+      </div>
+      <div id="dlgLinks" class="meta"></div>
+    </div>
+  </dialog>
+
   <script src="app.js"></script>
 </body>
 </html>
