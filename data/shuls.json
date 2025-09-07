@@ -12,7 +12,7 @@
       },
       "erev_shabbat": {
         "mincha": ["18:40"],
-        "kabbalat": ["19:00"]   // קבלת שבת/ערבית
+        "kabbalat": ["19:00"]   
       },
       "shabbat": {
         "shacharit": ["07:30","08:30","09:00"],
