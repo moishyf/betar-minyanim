@@ -1,86 +1,93 @@
 // dayjs פורמטים
 dayjs.extend(dayjs_plugin_customParseFormat);
 
-// ===== מצב אפליקציה =====
+/* =========================
+   מצב אפליקציה
+========================= */
 const state = {
   shuls: [],
   userPos: null,
   tab: "now",
-  prayer: "", // shacharit | mincha | maariv | ""
-  geoCache: loadGeoCache()
-};
-const state = {
-  shuls: [],
-  userPos: null,
-  tab: "now",
-  prayer: "",
-  daytype: "weekday", // NEW: weekday | erev_shabbat | shabbat | motzei_shabbat
+  prayer: "",            // "", "shacharit", "mincha", "maariv"
+  daytype: "weekday",    // "weekday" | "shabbat"
   geoCache: loadGeoCache()
 };
 
+/* =========================
+   אלמנטים
+========================= */
 const els = {
-  // ...קיים...
-  prayer: document.getElementById("prayer"),
-  daytype: document.getElementById("daytype"), // NEW
-  // ...המשך...
-  dlgErevMincha: document.getElementById("dlgErevMincha"),       // NEW
-  dlgKabbalat: document.getElementById("dlgKabbalat"),           // NEW
-  dlgMotzaeiMaariv: document.getElementById("dlgMotzaeiMaariv")  // NEW
-};
-
-// ===== אלמנטים =====
-const els = {
-  // טאבונים
+  // טאבים
   tabs: document.querySelectorAll(".tabs button"),
+
   // פילטרים
   q: document.getElementById("q"),
   nusach: document.getElementById("nusach"),
   prayer: document.getElementById("prayer"),
+  daytype: document.getElementById("daytype"),
   when: document.getElementById("when"),
   clearTime: document.getElementById("clearTime"),
   manualAddress: document.getElementById("manualAddress"),
   setAddress: document.getElementById("setAddress"),
   nearMe: document.getElementById("nearMe"),
+
   // רשימות
   nowList: document.getElementById("nowList"),
   nextList: document.getElementById("nextList"),
   shulList: document.getElementById("shulList"),
-  // דיאלוג
+
+  // דיאלוג בית כנסת
   dlg: document.getElementById("shulDialog"),
   dlgClose: document.getElementById("dlgClose"),
   dlgName: document.getElementById("dlgName"),
   dlgMeta: document.getElementById("dlgMeta"),
+
+  // חול
   dlgShacharit: document.getElementById("dlgShacharit"),
   dlgMincha: document.getElementById("dlgMincha"),
   dlgMaariv: document.getElementById("dlgMaariv"),
+
+  // שבת
+  dlgErevMincha: document.getElementById("dlgErevMincha"),
+  dlgKabbalat: document.getElementById("dlgKabbalat"),
+  dlgShabbatShacharit: document.getElementById("dlgShabbatShacharit"),
+  dlgShabbatMincha: document.getElementById("dlgShabbatMincha"),
+  dlgMotzaeiMaariv: document.getElementById("dlgMotzaeiMaariv"),
+
   dlgLinks: document.getElementById("dlgLinks")
 };
 
+/* =========================
+   אתחול
+========================= */
 init();
 
-// ===== Init =====
 async function init() {
   await loadData();
   setupTabs();
   setupFilters();
-  // רינדור ראשוני של כל המסכים, כולל רשימת בתי הכנסת
+
+  // רינדור ראשוני
   renderAll();
   renderShulList(filterShuls(state.shuls));
+
   initMap();
 }
 
-
-// ===== טעינת נתונים =====
+/* =========================
+   נתונים
+========================= */
 async function loadData() {
   const res = await fetch("data/shuls.json", { cache: "no-store" });
   state.shuls = await res.json();
-  // ננרמל טקסטים
   state.shuls.forEach(s => {
     s._hay = `${s.name} ${s.address} ${s.nusach || ""}`.toLowerCase();
   });
 }
 
-// ===== טאבים =====
+/* =========================
+   טאבים
+========================= */
 function setupTabs() {
   els.tabs.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -95,16 +102,26 @@ function setupTabs() {
   });
 }
 
-// ===== פילטרים =====
+/* =========================
+   פילטרים
+========================= */
 function setupFilters() {
   [els.q, els.nusach, els.when].forEach(el => el.addEventListener("input", renderAll));
-  els.prayer.addEventListener("change", () => { state.prayer = els.prayer.value; renderAll(); });
-  els.daytype.addEventListener("change", () => {
-  state.daytype = els.daytype.value || "weekday";
-  renderAll();
-});
 
-  els.clearTime.addEventListener("click", () => { els.when.value = ""; renderAll(); });
+  els.prayer.addEventListener("change", () => {
+    state.prayer = els.prayer.value;
+    renderAll();
+  });
+
+  els.daytype.addEventListener("change", () => {
+    state.daytype = els.daytype.value || "weekday";
+    renderAll();
+  });
+
+  els.clearTime.addEventListener("click", () => {
+    els.when.value = "";
+    renderAll();
+  });
 
   els.nearMe.addEventListener("click", () => {
     navigator.geolocation.getCurrentPosition(
@@ -130,10 +147,9 @@ function setupFilters() {
     }
   });
 
-  // דיאלוג סגירה
+  // סגירת הדיאלוג
   els.dlgClose.addEventListener("click", () => els.dlg.close());
   els.dlg.addEventListener("click", (e) => {
-    // סגירה בלחיצה מחוץ לחלון
     const rect = els.dlg.querySelector(".dialog-inner").getBoundingClientRect();
     if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
       els.dlg.close();
@@ -141,7 +157,9 @@ function setupFilters() {
   });
 }
 
-// ===== עזרי זמן =====
+/* =========================
+   עזרי זמן
+========================= */
 function getBaseTime() {
   const t = els.when.value;
   const d = dayjs();
@@ -155,10 +173,15 @@ function parseTimes(arr, baseDate) {
     dayjs(`${baseDate.format("YYYY-MM-DD")} ${t}`, "YYYY-MM-DD HH:mm").toDate()
   );
 }
+
+/* =========================
+   זמני תפילות לפי מצב היום
+========================= */
 function getPrayerTimesForShul(s, baseDate, onlyPrayer = "") {
   const sch = s.schedule || {};
   const type = state.daytype || "weekday";
 
+  // יום חול — רגיל
   if (type === "weekday") {
     const w = sch.weekday || {};
     const packs = {
@@ -170,37 +193,21 @@ function getPrayerTimesForShul(s, baseDate, onlyPrayer = "") {
     return [...packs.shacharit, ...packs.mincha, ...packs.maariv];
   }
 
-  if (type === "erev_shabbat") {
-    const e = sch.erev_shabbat || {};
-    const packs = {
-      // פה ההגיון: בבחירת "תפילה" נוכל להחליט מה להציג
-      // "mincha" → מנחה, "maariv" → קבלת שבת
-      shacharit: [], // אין שחרית בערב שבת
-      mincha: parseTimes(e.mincha, baseDate),
-      maariv: parseTimes(e.kabbalat, baseDate)
-    };
-    if (onlyPrayer) return packs[onlyPrayer] || [];
-    return [...packs.mincha, ...packs.maariv];
-  }
-
+  // שבת — מאחדים למחזור מלא:
+  // שחרית: שחרית שבת
+  // מנחה: מנחה ערב שבת + מנחה שבת
+  // מעריב: קבלת שבת/ערבית + מעריב מוצ״ש
   if (type === "shabbat") {
+    const e = sch.erev_shabbat || {};
     const sh = sch.shabbat || {};
+    const mo = sch.motzei_shabbat || {};
     const packs = {
       shacharit: parseTimes(sh.shacharit, baseDate),
-      mincha: parseTimes(sh.mincha, baseDate),
-      maariv: [] // מעריב של שבת לילה לא רלוונטי ביום שבת
+      mincha: [...parseTimes(e.mincha, baseDate), ...parseTimes(sh.mincha, baseDate)],
+      maariv: [...parseTimes(e.kabbalat, baseDate), ...parseTimes(mo.maariv, baseDate)]
     };
     if (onlyPrayer) return packs[onlyPrayer] || [];
-    return [...packs.shacharit, ...packs.mincha];
-  }
-
-  if (type === "motzei_shabbat") {
-    const m = sch.motzei_shabbat || {};
-    const packs = {
-      shacharit: [], mincha: [], maariv: parseTimes(m.maariv, baseDate)
-    };
-    if (onlyPrayer) return packs[onlyPrayer] || [];
-    return [...packs.maariv];
+    return [...packs.shacharit, ...packs.mincha, ...packs.maariv];
   }
 
   return [];
@@ -214,7 +221,9 @@ function upcomingForShul(s, baseDate, onlyPrayer = "") {
   return { next, around, all: times };
 }
 
-// ===== מרחק =====
+/* =========================
+   מרחק
+========================= */
 function distanceKm(a, b) {
   if (!a || !b) return null;
   const R = 6371;
@@ -226,7 +235,9 @@ function distanceKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 
-// ===== סינון =====
+/* =========================
+   סינון
+========================= */
 function filterShuls(shuls) {
   const q = (els.q.value || "").trim().toLowerCase();
   const nus = els.nusach.value;
@@ -237,7 +248,9 @@ function filterShuls(shuls) {
   });
 }
 
-// ===== רינדור =====
+/* =========================
+   רינדור
+========================= */
 function renderAll() {
   const filtered = filterShuls(state.shuls);
   renderNow(filtered);
@@ -274,7 +287,7 @@ function cardEl(s, times, dist) {
 function renderNow(shuls) {
   els.nowList.innerHTML = "";
   const base = getBaseTime();
-  const p = state.prayer || ""; // אם נבחרה תפילה – נתחשב בה בלבד
+  const p = state.prayer || "";
   const enriched = shuls.map(s => {
     const u = upcomingForShul(s, base, p);
     const dist = state.userPos ? distanceKm(state.userPos, s.pos || null) : null;
@@ -282,7 +295,6 @@ function renderNow(shuls) {
   }).filter(x => x.u.around.length);
 
   enriched.sort((a, b) => {
-    // מיון לפי מרחק אם יש, אחרת לפי שעה
     if (a.dist != null && b.dist != null) return a.dist - b.dist;
     if (a.dist != null) return -1;
     if (b.dist != null) return 1;
@@ -336,9 +348,9 @@ function renderShulList(shuls) {
     // לאפשר ללינק "נווט" לעבוד בלי לפתוח דיאלוג
     li.querySelectorAll("a").forEach(a => {
       a.addEventListener("click", (e) => {
-        e.stopPropagation();           // לא להפעיל את קליק הכרטיס
-        if (!a.classList.contains("nav-link")) e.preventDefault(); // "פתח כרטיסיה" מיותר עכשיו
-        if (!a.classList.contains("nav-link")) showShulDialog(s);  // תאימות לאחור
+        e.stopPropagation();
+        if (!a.classList.contains("nav-link")) e.preventDefault();
+        if (!a.classList.contains("nav-link")) showShulDialog(s);
       });
     });
 
@@ -346,49 +358,54 @@ function renderShulList(shuls) {
   });
 }
 
-
-// ===== דיאלוג בית כנסת =====
+/* =========================
+   דיאלוג בית כנסת
+========================= */
 function showShulDialog(s) {
   els.dlgName.textContent = s.name;
   els.dlgMeta.innerHTML = `📍 ${s.address} &nbsp;&nbsp; 🕍 ${s.nusach || "—"}`;
 
-  // חול
+  // יום חול
   const w = s.schedule?.weekday || {};
   setTimesBlock(els.dlgShacharit, w.shacharit);
   setTimesBlock(els.dlgMincha, w.mincha);
   setTimesBlock(els.dlgMaariv, w.maariv);
 
-  // ערב שבת
+  // שבת
   const e = s.schedule?.erev_shabbat || {};
+  const sh = s.schedule?.shabbat || {};
+  const mo = s.schedule?.motzei_shabbat || {};
   setTimesBlock(els.dlgErevMincha, e.mincha);
   setTimesBlock(els.dlgKabbalat, e.kabbalat);
-
-  // מוצ"ש
-  const mo = s.schedule?.motzei_shabbat || {};
+  setTimesBlock(els.dlgShabbatShacharit, sh.shacharit);
+  setTimesBlock(els.dlgShabbatMincha, sh.mincha);
   setTimesBlock(els.dlgMotzaeiMaariv, mo.maariv);
 
   els.dlgLinks.innerHTML = `
     <a target="_blank" href="https://www.google.com/maps?q=${encodeURIComponent(s.address)}">פתח ניווט</a>
   `;
+
   if (typeof els.dlg.showModal === "function") els.dlg.showModal();
   else els.dlg.setAttribute("open", "");
 }
 
+function setTimesBlock(container, arr) {
+  container.innerHTML = (arr && arr.length)
+    ? arr.map(t => `<span class="chip">${t}</span>`).join("")
+    : `<span class="chip">—</span>`;
+}
 
-// ===== גיאוקוד + קאש =====
+/* =========================
+   גיאוקוד + Cache
+========================= */
 function loadGeoCache() {
-  try {
-    return JSON.parse(localStorage.getItem("geoCache_v1") || "{}");
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(localStorage.getItem("geoCache_v1") || "{}"); }
+  catch { return {}; }
 }
 function saveGeoCache() {
-  try {
-    localStorage.setItem("geoCache_v1", JSON.stringify(state.geoCache));
-  } catch {}
+  try { localStorage.setItem("geoCache_v1", JSON.stringify(state.geoCache)); }
+  catch {}
 }
-
 async function geocodeAddress(addr) {
   const key = addr.trim().toLowerCase();
   if (state.geoCache[key]) return state.geoCache[key];
@@ -406,7 +423,9 @@ async function geocodeAddress(addr) {
   return null;
 }
 
-// ===== מפה =====
+/* =========================
+   מפה
+========================= */
 let map, markers;
 function initMap() {
   map = L.map("mapEl").setView([31.7, 35.12], 13);
@@ -423,7 +442,6 @@ async function renderMarkers(shuls) {
 
   for (const s of shuls) {
     if (!s.pos) {
-      // נוסיף "ביתר עילית" לכתובת לדיוק
       s.pos = await geocodeAddress(`${s.address}, ביתר עילית`);
     }
     if (s.pos) {
