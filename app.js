@@ -254,23 +254,36 @@ function renderShulList(shuls) {
   els.shulList.innerHTML = "";
   shuls.forEach(s => {
     const li = document.createElement("li");
-    li.className = "card";
+    li.className = "card clickable";
     li.innerHTML = `
       <h3>${s.name}</h3>
-      <div class="meta"><span>📍 ${s.address}</span> <span>🕍 ${s.nusach || "—"}</span></div>
+      <div class="meta">
+        <span>📍 ${s.address}</span>
+        <span>🕍 ${s.nusach || "—"}</span>
+      </div>
       <div class="meta">
         <a href="#" data-shul-id="${s.id}" class="open-details">פתח כרטיסיה</a>
         &nbsp;|&nbsp;
-        <a target="_blank" href="https://www.google.com/maps?q=${encodeURIComponent(s.address)}">נווט</a>
+        <a target="_blank" class="nav-link" href="https://www.google.com/maps?q=${encodeURIComponent(s.address)}">נווט</a>
       </div>
     `;
-    li.querySelector(".open-details").addEventListener("click", (e) => {
-      e.preventDefault();
-      showShulDialog(s);
+
+    // כל הכרטיס לחיץ
+    li.addEventListener("click", () => showShulDialog(s));
+
+    // לאפשר ללינק "נווט" לעבוד בלי לפתוח דיאלוג
+    li.querySelectorAll("a").forEach(a => {
+      a.addEventListener("click", (e) => {
+        e.stopPropagation();           // לא להפעיל את קליק הכרטיס
+        if (!a.classList.contains("nav-link")) e.preventDefault(); // "פתח כרטיסיה" מיותר עכשיו
+        if (!a.classList.contains("nav-link")) showShulDialog(s);  // תאימות לאחור
+      });
     });
+
     els.shulList.appendChild(li);
   });
 }
+
 
 // ===== דיאלוג בית כנסת =====
 function showShulDialog(s) {
