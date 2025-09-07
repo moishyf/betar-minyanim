@@ -1,26 +1,46 @@
+// dayjs פורמטים
 dayjs.extend(dayjs_plugin_customParseFormat);
 
+// ===== מצב אפליקציה =====
 const state = {
   shuls: [],
   userPos: null,
-  tab: "now"
+  tab: "now",
+  prayer: "", // shacharit | mincha | maariv | ""
+  geoCache: loadGeoCache()
 };
 
+// ===== אלמנטים =====
 const els = {
+  // טאבונים
   tabs: document.querySelectorAll(".tabs button"),
-  nowList: document.getElementById("nowList"),
-  nextList: document.getElementById("nextList"),
+  // פילטרים
   q: document.getElementById("q"),
   nusach: document.getElementById("nusach"),
+  prayer: document.getElementById("prayer"),
   when: document.getElementById("when"),
   clearTime: document.getElementById("clearTime"),
   manualAddress: document.getElementById("manualAddress"),
   setAddress: document.getElementById("setAddress"),
-  nearMe: document.getElementById("nearMe")
+  nearMe: document.getElementById("nearMe"),
+  // רשימות
+  nowList: document.getElementById("nowList"),
+  nextList: document.getElementById("nextList"),
+  shulList: document.getElementById("shulList"),
+  // דיאלוג
+  dlg: document.getElementById("shulDialog"),
+  dlgClose: document.getElementById("dlgClose"),
+  dlgName: document.getElementById("dlgName"),
+  dlgMeta: document.getElementById("dlgMeta"),
+  dlgShacharit: document.getElementById("dlgShacharit"),
+  dlgMincha: document.getElementById("dlgMincha"),
+  dlgMaariv: document.getElementById("dlgMaariv"),
+  dlgLinks: document.getElementById("dlgLinks")
 };
 
 init();
 
+// ===== Init =====
 async function init() {
   await loadData();
   setupTabs();
@@ -29,13 +49,17 @@ async function init() {
   initMap();
 }
 
-// --- טעינת נתונים ---
+// ===== טעינת נתונים =====
 async function loadData() {
-  const res = await fetch("data/shuls.json");
+  const res = await fetch("data/shuls.json", { cache: "no-store" });
   state.shuls = await res.json();
+  // ננרמל טקסטים
+  state.shuls.forEach(s => {
+    s._hay = `${s.name} ${s.address} ${s.nusach || ""}`.toLowerCase();
+  });
 }
 
-// --- טאבים ---
+// ===== טאבים =====
 function setupTabs() {
   els.tabs.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -45,20 +69,17 @@ function setupTabs() {
       document.getElementById(btn.dataset.tab).classList.add("active");
       state.tab = btn.dataset.tab;
       if (state.tab === "map" && map) map.invalidateSize();
+      if (state.tab === "shuls") renderShulList(filterShuls(state.shuls));
     });
   });
 }
 
-// --- פילטרים ומיקום ---
+// ===== פילטרים =====
 function setupFilters() {
-  [els.q, els.nusach, els.when].forEach(el => {
-    el.addEventListener("input", renderAll);
-  });
+  [els.q, els.nusach, els.when].forEach(el => el.addEventListener("input", renderAll));
+  els.prayer.addEventListener("change", () => { state.prayer = els.prayer.value; renderAll(); });
 
-  els.clearTime.addEventListener("click", () => {
-    els.when.value = "";
-    renderAll();
-  });
+  els.clearTime.addEventListener("click", () => { els.when.value = ""; renderAll(); });
 
   els.nearMe.addEventListener("click", () => {
     navigator.geolocation.getCurrentPosition(
@@ -72,7 +93,7 @@ function setupFilters() {
   });
 
   els.setAddress.addEventListener("click", async () => {
-    const addr = els.manualAddress.value.trim();
+    const addr = (els.manualAddress.value || "").trim();
     if (!addr) return;
     const pos = await geocodeAddress(addr);
     if (pos) {
@@ -83,65 +104,19 @@ function setupFilters() {
       alert("לא הצלחתי למצוא את הכתובת");
     }
   });
-}
 
-// --- גיאוקוד כתובת (OSM/Nominatim) ---
-async function geocodeAddress(addr) {
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-      addr
-    )}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.length) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  // דיאלוג סגירה
+  els.dlgClose.addEventListener("click", () => els.dlg.close());
+  els.dlg.addEventListener("click", (e) => {
+    // סגירה בלחיצה מחוץ לחלון
+    const rect = els.dlg.querySelector(".dialog-inner").getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+      els.dlg.close();
     }
-  } catch (e) {
-    console.error(e);
-  }
-  return null;
+  });
 }
 
-// --- עיבוד זמני מניינים ---
-function parseTimes(arr, baseDate) {
-  return (arr || []).map(t =>
-    dayjs(`${baseDate.format("YYYY-MM-DD")} ${t}`, "YYYY-MM-DD HH:mm").toDate()
-  );
-}
-
-function upcomingForShul(s, baseDate) {
-  const weekday = s.schedule?.weekday || {};
-  const times = [
-    ...parseTimes(weekday.shacharit, baseDate),
-    ...parseTimes(weekday.mincha, baseDate),
-    ...parseTimes(weekday.maariv, baseDate)
-  ]
-    .filter(Boolean)
-    .sort((a, b) => a - b);
-
-  const now = baseDate.toDate();
-  const next = times.find(d => d > now);
-  const around = times.filter(d => Math.abs(d - now) <= 30 * 60 * 1000);
-  return { next, around, all: times };
-}
-
-function distanceKm(a, b) {
-  if (!a || !b) return null;
-  const R = 6371;
-  const dLat = (b.lat - a.lat) * Math.PI / 180;
-  const dLng = (b.lng - a.lng) * Math.PI / 180;
-  const la1 = a.lat * Math.PI / 180;
-  const la2 = b.lat * Math.PI / 180;
-  const x =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(x));
-}
-
-function humanTime(d) {
-  return dayjs(d).format("HH:mm");
-}
-
+// ===== עזרי זמן =====
 function getBaseTime() {
   const t = els.when.value;
   const d = dayjs();
@@ -149,69 +124,64 @@ function getBaseTime() {
   const [HH, MM] = t.split(":");
   return d.hour(Number(HH)).minute(Number(MM)).second(0);
 }
-
-// --- הצגה ---
-function renderAll() {
-  const filtered = filterShuls(state.shuls);
-  renderNow(filtered);
-  renderNext(filtered);
-  renderMarkers(filtered);
+function humanTime(d) { return dayjs(d).format("HH:mm"); }
+function parseTimes(arr, baseDate) {
+  return (arr || []).map(t =>
+    dayjs(`${baseDate.format("YYYY-MM-DD")} ${t}`, "YYYY-MM-DD HH:mm").toDate()
+  );
+}
+function getPrayerTimesForShul(s, baseDate, onlyPrayer = "") {
+  const w = s.schedule?.weekday || {};
+  const packs = {
+    shacharit: parseTimes(w.shacharit, baseDate),
+    mincha: parseTimes(w.mincha, baseDate),
+    maariv: parseTimes(w.maariv, baseDate)
+  };
+  if (onlyPrayer) return packs[onlyPrayer] || [];
+  // אם לא סיננו תפילה – נחזיר את כל הזמנים ביחד
+  return [...packs.shacharit, ...packs.mincha, ...packs.maariv];
+}
+function upcomingForShul(s, baseDate, onlyPrayer = "") {
+  const times = getPrayerTimesForShul(s, baseDate, onlyPrayer).filter(Boolean).sort((a, b) => a - b);
+  const now = baseDate.toDate();
+  const next = times.find(d => d > now);
+  const around = times.filter(d => Math.abs(d - now) <= 30 * 60 * 1000);
+  return { next, around, all: times };
 }
 
-function filterShuls(shuls) {
-  const q = (els.q.value || "").trim();
-  const nus = els.nusach.value;
+// ===== מרחק =====
+function distanceKm(a, b) {
+  if (!a || !b) return null;
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const la1 = a.lat * Math.PI / 180;
+  const la2 = b.lat * Math.PI / 180;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
 
+// ===== סינון =====
+function filterShuls(shuls) {
+  const q = (els.q.value || "").trim().toLowerCase();
+  const nus = els.nusach.value;
   return shuls.filter(s => {
     if (nus && s.nusach !== nus) return false;
-    if (q) {
-      const hay = `${s.name} ${s.address} ${s.nusach || ""}`.toLowerCase();
-      if (!hay.includes(q.toLowerCase())) return false;
-    }
+    if (q && !s._hay.includes(q)) return false;
     return true;
   });
 }
 
-function renderNow(shuls) {
-  els.nowList.innerHTML = "";
-  const base = getBaseTime();
-  const enriched = shuls
-    .map(s => {
-      const u = upcomingForShul(s, base);
-      const dist = state.userPos
-        ? distanceKm(state.userPos, s.pos || null)
-        : null;
-      return { s, u, dist };
-    })
-    .filter(x => x.u.around.length);
-
-  enriched.sort((a, b) => (a.dist || 0) - (b.dist || 0));
-
-  enriched.forEach(({ s, u, dist }) => {
-    els.nowList.appendChild(cardEl(s, u.around.map(humanTime), dist));
-  });
+// ===== רינדור =====
+function renderAll() {
+  const filtered = filterShuls(state.shuls);
+  renderNow(filtered);
+  renderNext(filtered);
+  if (state.tab === "shuls") renderShulList(filtered);
+  renderMarkers(filtered);
 }
 
-function renderNext(shuls) {
-  els.nextList.innerHTML = "";
-  const base = getBaseTime();
-  const enriched = shuls
-    .map(s => {
-      const u = upcomingForShul(s, base);
-      const dist = state.userPos
-        ? distanceKm(state.userPos, s.pos || null)
-        : null;
-      return { s, u, dist };
-    })
-    .filter(x => x.u.next);
-
-  enriched.sort((a, b) => a.u.next - b.u.next);
-
-  enriched.forEach(({ s, u, dist }) => {
-    els.nextList.appendChild(cardEl(s, [humanTime(u.next)], dist));
-  });
-}
-
+// כרטיס כללי
 function cardEl(s, times, dist) {
   const li = document.createElement("li");
   li.className = "card";
@@ -222,15 +192,137 @@ function cardEl(s, times, dist) {
       <span>🕍 ${s.nusach || "—"}</span>
       ${dist != null ? `<span>📏 ${dist.toFixed(1)} ק״מ</span>` : ""}
     </div>
-    <div class="times">🕒 ${times.join(" · ")}</div>
-    <div class="meta"><a href="https://www.google.com/maps?q=${encodeURIComponent(
-      s.address
-    )}" target="_blank">נווט ➜</a></div>
+    <div class="times">${(times || []).map(t => `<span class="chip">${t}</span>`).join("") || "—"}</div>
+    <div class="meta">
+      <a href="https://www.google.com/maps?q=${encodeURIComponent(s.address)}" target="_blank">נווט ➜</a>
+      &nbsp;|&nbsp;
+      <a href="#" data-shul-id="${s.id}" class="open-details">פרטים</a>
+    </div>
   `;
+  li.querySelector(".open-details").addEventListener("click", (e) => {
+    e.preventDefault();
+    showShulDialog(s);
+  });
   return li;
 }
 
-// --- מפה ---
+function renderNow(shuls) {
+  els.nowList.innerHTML = "";
+  const base = getBaseTime();
+  const p = state.prayer || ""; // אם נבחרה תפילה – נתחשב בה בלבד
+  const enriched = shuls.map(s => {
+    const u = upcomingForShul(s, base, p);
+    const dist = state.userPos ? distanceKm(state.userPos, s.pos || null) : null;
+    return { s, u, dist };
+  }).filter(x => x.u.around.length);
+
+  enriched.sort((a, b) => {
+    // מיון לפי מרחק אם יש, אחרת לפי שעה
+    if (a.dist != null && b.dist != null) return a.dist - b.dist;
+    if (a.dist != null) return -1;
+    if (b.dist != null) return 1;
+    return a.u.around[0] - b.u.around[0];
+  });
+
+  enriched.forEach(({ s, u, dist }) => {
+    els.nowList.appendChild(cardEl(s, u.around.map(humanTime), dist));
+  });
+}
+
+function renderNext(shuls) {
+  els.nextList.innerHTML = "";
+  const base = getBaseTime();
+  const p = state.prayer || "";
+  const enriched = shuls.map(s => {
+    const u = upcomingForShul(s, base, p);
+    const dist = state.userPos ? distanceKm(state.userPos, s.pos || null) : null;
+    return { s, u, dist };
+  }).filter(x => x.u.next);
+
+  enriched.sort((a, b) => a.u.next - b.u.next);
+
+  enriched.forEach(({ s, u, dist }) => {
+    els.nextList.appendChild(cardEl(s, [humanTime(u.next)], dist));
+  });
+}
+
+// רשימת בתי כנסת (טאב "בתי כנסת")
+function renderShulList(shuls) {
+  els.shulList.innerHTML = "";
+  shuls.forEach(s => {
+    const li = document.createElement("li");
+    li.className = "card";
+    li.innerHTML = `
+      <h3>${s.name}</h3>
+      <div class="meta"><span>📍 ${s.address}</span> <span>🕍 ${s.nusach || "—"}</span></div>
+      <div class="meta">
+        <a href="#" data-shul-id="${s.id}" class="open-details">פתח כרטיסיה</a>
+        &nbsp;|&nbsp;
+        <a target="_blank" href="https://www.google.com/maps?q=${encodeURIComponent(s.address)}">נווט</a>
+      </div>
+    `;
+    li.querySelector(".open-details").addEventListener("click", (e) => {
+      e.preventDefault();
+      showShulDialog(s);
+    });
+    els.shulList.appendChild(li);
+  });
+}
+
+// ===== דיאלוג בית כנסת =====
+function showShulDialog(s) {
+  els.dlgName.textContent = s.name;
+  els.dlgMeta.innerHTML = `📍 ${s.address} &nbsp;&nbsp; 🕍 ${s.nusach || "—"}`;
+  // זמנים (תמיד נציג את כולן)
+  const w = s.schedule?.weekday || {};
+  setTimesBlock(els.dlgShacharit, w.shacharit);
+  setTimesBlock(els.dlgMincha, w.mincha);
+  setTimesBlock(els.dlgMaariv, w.maariv);
+  els.dlgLinks.innerHTML = `
+    <a target="_blank" href="https://www.google.com/maps?q=${encodeURIComponent(s.address)}">פתח ניווט</a>
+  `;
+  if (typeof els.dlg.showModal === "function") els.dlg.showModal();
+  else els.dlg.setAttribute("open", "");
+}
+
+function setTimesBlock(container, arr) {
+  container.innerHTML = (arr && arr.length)
+    ? arr.map(t => `<span class="chip">${t}</span>`).join("")
+    : `<span class="chip">—</span>`;
+}
+
+// ===== גיאוקוד + קאש =====
+function loadGeoCache() {
+  try {
+    return JSON.parse(localStorage.getItem("geoCache_v1") || "{}");
+  } catch {
+    return {};
+  }
+}
+function saveGeoCache() {
+  try {
+    localStorage.setItem("geoCache_v1", JSON.stringify(state.geoCache));
+  } catch {}
+}
+
+async function geocodeAddress(addr) {
+  const key = addr.trim().toLowerCase();
+  if (state.geoCache[key]) return state.geoCache[key];
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`;
+    const res = await fetch(url, { headers: { "Accept-Language": "he" } });
+    const data = await res.json();
+    if (data && data.length) {
+      const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      state.geoCache[key] = pos;
+      saveGeoCache();
+      return pos;
+    }
+  } catch (e) { console.error("geocode error", e); }
+  return null;
+}
+
+// ===== מפה =====
 let map, markers;
 function initMap() {
   map = L.map("mapEl").setView([31.7, 35.12], 13);
@@ -238,7 +330,6 @@ function initMap() {
     attribution: "© OpenStreetMap"
   }).addTo(map);
   markers = L.layerGroup().addTo(map);
-
   renderMarkers(state.shuls);
 }
 
@@ -248,18 +339,18 @@ async function renderMarkers(shuls) {
 
   for (const s of shuls) {
     if (!s.pos) {
+      // נוסיף "ביתר עילית" לכתובת לדיוק
       s.pos = await geocodeAddress(`${s.address}, ביתר עילית`);
     }
     if (s.pos) {
-      const m = L.marker([s.pos.lat, s.pos.lng]).bindPopup(`
+      const m = L.marker([s.pos.lat, s.pos.lng]).addTo(markers);
+      m.bindPopup(`
         <b>${s.name}</b><br/>
         ${s.address}<br/>
         נוסח: ${s.nusach || "—"}<br/>
-        <a target="_blank" href="https://www.google.com/maps?q=${encodeURIComponent(
-          s.address
-        )}">נווט</a>
+        <a target="_blank" href="https://www.google.com/maps?q=${encodeURIComponent(s.address)}">נווט</a>
       `);
-      markers.addLayer(m);
+      m.on("click", () => showShulDialog(s));
     }
   }
 }
