@@ -45,9 +45,12 @@ async function init() {
   await loadData();
   setupTabs();
   setupFilters();
+  // רינדור ראשוני של כל המסכים, כולל רשימת בתי הכנסת
   renderAll();
+  renderShulList(filterShuls(state.shuls));
   initMap();
 }
+
 
 // ===== טעינת נתונים =====
 async function loadData() {
