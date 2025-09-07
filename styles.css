@@ -1,118 +1,150 @@
-:root { 
-  --gap: 10px; 
-  font-family: system-ui, Arial, sans-serif; 
+/* ===== בסיס מודרני ===== */
+:root{
+  --bg:#0f1220;            /* רקע כהה אלגנטי */
+  --card:#14182b;          /* כרטיסים */
+  --muted:#aab1c7;         /* טקסט משני */
+  --text:#e9ecf8;          /* טקסט רגיל */
+  --accent:#7c9cff;        /* כחול נעים */
+  --accent-2:#5ef2c6;      /* טורקיז */
+  --ring: 0 0 0 2px rgba(124,156,255,.35);
+  --rad:14px;
+  --gap:12px;
+  --shadow: 0 10px 30px rgba(0,0,0,.25);
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Arial, Helvetica, sans-serif;
 }
 
-body { 
-  margin: 0; 
-  background:#f7f7f9; 
-  color:#111; 
+*{ box-sizing:border-box }
+html,body{ height:100% }
+body{
+  margin:0; background:
+  radial-gradient(1200px 600px at 20% -10%, #1b2050 0%, transparent 60%),
+  radial-gradient(900px 500px at 110% 10%, #123742 0%, transparent 55%),
+  var(--bg);
+  color: var(--text);
 }
 
-header { 
-  position:sticky; 
-  top:0; 
-  background:#fff; 
-  padding: var(--gap); 
-  border-bottom:1px solid #ddd; 
-  z-index:1000;
+/* ===== כותרת עליונה ===== */
+header{
+  position:sticky; top:0; z-index:1000;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(20,24,43,.75), rgba(20,24,43,.45));
+  border-bottom:1px solid rgba(255,255,255,.08);
+  padding: 14px clamp(12px, 3vw, 24px);
+}
+h1{
+  margin:0 0 8px; font-size: clamp(20px, 3vw, 28px);
+  letter-spacing:.3px; font-weight:700;
+  display:flex; align-items:center; gap:10px;
+}
+h1::after{
+  content:""; width:8px; height:8px; border-radius:999px;
+  background: radial-gradient(circle at 30% 30%, var(--accent), var(--accent-2));
+  box-shadow: 0 0 18px var(--accent);
 }
 
-h1 { 
-  margin: 0 0 8px 0; 
-  font-size: 1.4rem; 
+/* ===== סרגל פילטרים ===== */
+.filters{ display:flex; flex-direction:column; gap: var(--gap); }
+
+.row{ display:flex; align-items:center; gap: var(--gap); }
+.wrap{ flex-wrap:wrap }
+
+input, select, button{
+  background: #0f1430;
+  color: var(--text);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;
+  padding:10px 12px;
+  outline: none;
+  transition: .2s ease;
+}
+input::placeholder{ color: #c4c8dd80 }
+input:focus, select:focus{
+  box-shadow: var(--ring);
+  border-color: #93a7ff;
+}
+button{
+  cursor:pointer; font-weight:600;
+  background: linear-gradient(180deg, #2631a9, #1b2391);
+  border-color: transparent;
+}
+button:hover{ filter: brightness(1.06) }
+button#clearTime{ background: #203055 }
+
+/* ===== טאבים ===== */
+.tabs{ margin-top: 10px; display:flex; gap:8px; }
+.tabs button{
+  background: transparent; border: none; color: var(--muted);
+  padding:10px 14px; border-bottom:2px solid transparent;
+}
+.tabs button.active{
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  text-shadow: 0 0 8px rgba(124,156,255,.35);
 }
 
-.filters { 
-  display:flex; 
-  flex-direction: column;
-  gap: var(--gap); 
+/* ===== תוכן ===== */
+main{ padding: clamp(10px, 3vw, 20px); }
+.cards{
+  list-style:none; margin:0; padding:0;
+  display:grid; gap: var(--gap);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.08);
+  border-radius: var(--rad);
+  padding:16px;
+  box-shadow: var(--shadow);
+}
+.card h3{ margin:0 0 8px; font-size:1.05rem }
+.meta{
+  display:flex; gap:10px; flex-wrap:wrap;
+  color: var(--muted); font-size:.92rem;
+}
+.times{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap }
+.times .chip{
+  background:#0f1430; border:1px solid rgba(255,255,255,.12);
+  padding:6px 10px; border-radius:999px; font-size:.9rem;
+}
+a{ color: var(--accent-2); text-decoration:none }
+a:hover{ text-decoration:underline }
+
+/* ===== מפה ===== */
+#mapEl{
+  width:100%; height: 65vh;
+  border-radius: var(--rad);
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow: var(--shadow);
+  overflow:hidden;
 }
 
-.filters input, 
-.filters select, 
-.filters button { 
-  padding:8px; 
-  border:1px solid #ccc; 
-  border-radius:8px; 
-  background:#fff; 
+/* ===== דיאלוג (כרטיסיית בית כנסת) ===== */
+dialog{
+  width:min(900px, 92vw);
+  border:none; padding:0; background: transparent;
 }
+dialog::backdrop{
+  backdrop-filter: blur(6px);
+  background: rgba(5,7,16,.55);
+}
+.dialog-inner{
+  background: linear-gradient(180deg, #151a30, #101427);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius: 18px; padding:18px;
+  box-shadow: var(--shadow);
+}
+.dlg-close{
+  position:absolute; right:16px; top:12px;
+  background:#2a335e; border:1px solid rgba(255,255,255,.12);
+  border-radius:10px; padding:6px 10px;
+}
+dialog h2{ margin:0 0 8px }
+.times-block{ margin-top:14px }
+.times-block h3{ margin:0 0 6px; font-size:1rem; color:#cfd6f3 }
+#dlgLinks{ margin-top:12px }
 
-.locrow, .timerow {
-  display:flex;
-  gap: var(--gap);
-  flex-wrap: wrap;
-}
-
-.tabs { 
-  margin-top: var(--gap); 
-  display:flex; 
-  gap: var(--gap); 
-}
-
-.tabs button { 
-  padding:8px 12px; 
-  border:none; 
-  border-bottom:3px solid transparent; 
-  background:transparent; 
-  cursor:pointer; 
-}
-
-.tabs button.active { 
-  border-color:#444; 
-  font-weight:700; 
-}
-
-main { 
-  padding: var(--gap); 
-}
-
-.cards { 
-  list-style:none; 
-  padding:0; 
-  margin:0; 
-  display:grid; 
-  gap: var(--gap); 
-}
-
-.card { 
-  background:#fff; 
-  border:1px solid #e3e3e3; 
-  border-radius:10px; 
-  padding:12px; 
-  box-shadow:0 1px 3px rgba(0,0,0,.04); 
-}
-
-.card h3 { 
-  margin:0 0 6px; 
-  font-size: 1.05rem; 
-}
-
-.card .meta { 
-  display:flex; 
-  flex-wrap:wrap; 
-  gap:8px; 
-  color:#555; 
-  font-size:.9rem; 
-}
-
-.card .times { 
-  margin-top:8px; 
-  display:flex; 
-  gap:12px; 
-  flex-wrap:wrap; 
-}
-
-#mapEl { 
-  width:100%; 
-  height: 65vh; 
-  border-radius:10px; 
-  border:1px solid #ddd; 
-}
-
-.tab { 
-  display:none; 
-}
-.tab.active { 
-  display:block; 
+/* ===== רספונסיביות עדינה ===== */
+@media (max-width:560px){
+  .row{ flex-direction:column; align-items:stretch }
+  .tabs{ flex-wrap:wrap }
 }
