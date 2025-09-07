@@ -9,6 +9,24 @@ const state = {
   prayer: "", // shacharit | mincha | maariv | ""
   geoCache: loadGeoCache()
 };
+const state = {
+  shuls: [],
+  userPos: null,
+  tab: "now",
+  prayer: "",
+  daytype: "weekday", // NEW: weekday | erev_shabbat | shabbat | motzei_shabbat
+  geoCache: loadGeoCache()
+};
+
+const els = {
+  // ...קיים...
+  prayer: document.getElementById("prayer"),
+  daytype: document.getElementById("daytype"), // NEW
+  // ...המשך...
+  dlgErevMincha: document.getElementById("dlgErevMincha"),       // NEW
+  dlgKabbalat: document.getElementById("dlgKabbalat"),           // NEW
+  dlgMotzaeiMaariv: document.getElementById("dlgMotzaeiMaariv")  // NEW
+};
 
 // ===== אלמנטים =====
 const els = {
@@ -81,6 +99,10 @@ function setupTabs() {
 function setupFilters() {
   [els.q, els.nusach, els.when].forEach(el => el.addEventListener("input", renderAll));
   els.prayer.addEventListener("change", () => { state.prayer = els.prayer.value; renderAll(); });
+  els.daytype.addEventListener("change", () => {
+  state.daytype = els.daytype.value || "weekday";
+  renderAll();
+});
 
   els.clearTime.addEventListener("click", () => { els.when.value = ""; renderAll(); });
 
@@ -134,16 +156,56 @@ function parseTimes(arr, baseDate) {
   );
 }
 function getPrayerTimesForShul(s, baseDate, onlyPrayer = "") {
-  const w = s.schedule?.weekday || {};
-  const packs = {
-    shacharit: parseTimes(w.shacharit, baseDate),
-    mincha: parseTimes(w.mincha, baseDate),
-    maariv: parseTimes(w.maariv, baseDate)
-  };
-  if (onlyPrayer) return packs[onlyPrayer] || [];
-  // אם לא סיננו תפילה – נחזיר את כל הזמנים ביחד
-  return [...packs.shacharit, ...packs.mincha, ...packs.maariv];
+  const sch = s.schedule || {};
+  const type = state.daytype || "weekday";
+
+  if (type === "weekday") {
+    const w = sch.weekday || {};
+    const packs = {
+      shacharit: parseTimes(w.shacharit, baseDate),
+      mincha: parseTimes(w.mincha, baseDate),
+      maariv: parseTimes(w.maariv, baseDate)
+    };
+    if (onlyPrayer) return packs[onlyPrayer] || [];
+    return [...packs.shacharit, ...packs.mincha, ...packs.maariv];
+  }
+
+  if (type === "erev_shabbat") {
+    const e = sch.erev_shabbat || {};
+    const packs = {
+      // פה ההגיון: בבחירת "תפילה" נוכל להחליט מה להציג
+      // "mincha" → מנחה, "maariv" → קבלת שבת
+      shacharit: [], // אין שחרית בערב שבת
+      mincha: parseTimes(e.mincha, baseDate),
+      maariv: parseTimes(e.kabbalat, baseDate)
+    };
+    if (onlyPrayer) return packs[onlyPrayer] || [];
+    return [...packs.mincha, ...packs.maariv];
+  }
+
+  if (type === "shabbat") {
+    const sh = sch.shabbat || {};
+    const packs = {
+      shacharit: parseTimes(sh.shacharit, baseDate),
+      mincha: parseTimes(sh.mincha, baseDate),
+      maariv: [] // מעריב של שבת לילה לא רלוונטי ביום שבת
+    };
+    if (onlyPrayer) return packs[onlyPrayer] || [];
+    return [...packs.shacharit, ...packs.mincha];
+  }
+
+  if (type === "motzei_shabbat") {
+    const m = sch.motzei_shabbat || {};
+    const packs = {
+      shacharit: [], mincha: [], maariv: parseTimes(m.maariv, baseDate)
+    };
+    if (onlyPrayer) return packs[onlyPrayer] || [];
+    return [...packs.maariv];
+  }
+
+  return [];
 }
+
 function upcomingForShul(s, baseDate, onlyPrayer = "") {
   const times = getPrayerTimesForShul(s, baseDate, onlyPrayer).filter(Boolean).sort((a, b) => a - b);
   const now = baseDate.toDate();
@@ -289,11 +351,22 @@ function renderShulList(shuls) {
 function showShulDialog(s) {
   els.dlgName.textContent = s.name;
   els.dlgMeta.innerHTML = `📍 ${s.address} &nbsp;&nbsp; 🕍 ${s.nusach || "—"}`;
-  // זמנים (תמיד נציג את כולן)
+
+  // חול
   const w = s.schedule?.weekday || {};
   setTimesBlock(els.dlgShacharit, w.shacharit);
   setTimesBlock(els.dlgMincha, w.mincha);
   setTimesBlock(els.dlgMaariv, w.maariv);
+
+  // ערב שבת
+  const e = s.schedule?.erev_shabbat || {};
+  setTimesBlock(els.dlgErevMincha, e.mincha);
+  setTimesBlock(els.dlgKabbalat, e.kabbalat);
+
+  // מוצ"ש
+  const mo = s.schedule?.motzei_shabbat || {};
+  setTimesBlock(els.dlgMotzaeiMaariv, mo.maariv);
+
   els.dlgLinks.innerHTML = `
     <a target="_blank" href="https://www.google.com/maps?q=${encodeURIComponent(s.address)}">פתח ניווט</a>
   `;
@@ -301,11 +374,6 @@ function showShulDialog(s) {
   else els.dlg.setAttribute("open", "");
 }
 
-function setTimesBlock(container, arr) {
-  container.innerHTML = (arr && arr.length)
-    ? arr.map(t => `<span class="chip">${t}</span>`).join("")
-    : `<span class="chip">—</span>`;
-}
 
 // ===== גיאוקוד + קאש =====
 function loadGeoCache() {
