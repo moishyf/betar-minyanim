@@ -1,0 +1,118 @@
+:root { 
+  --gap: 10px; 
+  font-family: system-ui, Arial, sans-serif; 
+}
+
+body { 
+  margin: 0; 
+  background:#f7f7f9; 
+  color:#111; 
+}
+
+header { 
+  position:sticky; 
+  top:0; 
+  background:#fff; 
+  padding: var(--gap); 
+  border-bottom:1px solid #ddd; 
+  z-index:1000;
+}
+
+h1 { 
+  margin: 0 0 8px 0; 
+  font-size: 1.4rem; 
+}
+
+.filters { 
+  display:flex; 
+  flex-direction: column;
+  gap: var(--gap); 
+}
+
+.filters input, 
+.filters select, 
+.filters button { 
+  padding:8px; 
+  border:1px solid #ccc; 
+  border-radius:8px; 
+  background:#fff; 
+}
+
+.locrow, .timerow {
+  display:flex;
+  gap: var(--gap);
+  flex-wrap: wrap;
+}
+
+.tabs { 
+  margin-top: var(--gap); 
+  display:flex; 
+  gap: var(--gap); 
+}
+
+.tabs button { 
+  padding:8px 12px; 
+  border:none; 
+  border-bottom:3px solid transparent; 
+  background:transparent; 
+  cursor:pointer; 
+}
+
+.tabs button.active { 
+  border-color:#444; 
+  font-weight:700; 
+}
+
+main { 
+  padding: var(--gap); 
+}
+
+.cards { 
+  list-style:none; 
+  padding:0; 
+  margin:0; 
+  display:grid; 
+  gap: var(--gap); 
+}
+
+.card { 
+  background:#fff; 
+  border:1px solid #e3e3e3; 
+  border-radius:10px; 
+  padding:12px; 
+  box-shadow:0 1px 3px rgba(0,0,0,.04); 
+}
+
+.card h3 { 
+  margin:0 0 6px; 
+  font-size: 1.05rem; 
+}
+
+.card .meta { 
+  display:flex; 
+  flex-wrap:wrap; 
+  gap:8px; 
+  color:#555; 
+  font-size:.9rem; 
+}
+
+.card .times { 
+  margin-top:8px; 
+  display:flex; 
+  gap:12px; 
+  flex-wrap:wrap; 
+}
+
+#mapEl { 
+  width:100%; 
+  height: 65vh; 
+  border-radius:10px; 
+  border:1px solid #ddd; 
+}
+
+.tab { 
+  display:none; 
+}
+.tab.active { 
+  display:block; 
+}
